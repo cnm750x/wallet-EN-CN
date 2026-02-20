@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>钱包连接演示 - 支持中英切换</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    header {
+      position: fixed;
+      top: 16px;
+      right: 24px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .lang-btn {
+      background: rgba(59,130,246,0.25);
+      color: #93c5fd;
+      border: 1px solid rgba(147,197,253,0.3);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lang-btn:hover {
+      background: rgba(59,130,246,0.4);
+      border-color: #60a5fa;
+    }
+
+    .lang-btn.active {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+
+    #walletBtn {
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
+      color: white;
+      border: none;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      font-size: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 20px rgba(59,130,246,0.5);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    #walletBtn:hover {
+      transform: scale(1.15);
+      box-shadow: 0 10px 30px rgba(59,130,246,0.7);
+    }
+
+    #walletBtn.connected {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      box-shadow: 0 6px 20px rgba(16,185,129,0.5);
+    }
+
+    #walletBtn.connected:hover {
+      box-shadow: 0 10px 30px rgba(16,185,129,0.7);
+    }
+
+    #walletBtn svg {
+      width: 26px;
+      height: 26px;
+      stroke: currentColor;
+      stroke-width: 2.3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    #walletBtn::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: -42px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30,41,59,0.98);
+      color: #e2e8f0;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      transform: translateX(-50%) translateY(6px);
+    }
+
+    #walletBtn:hover::after {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* 弹窗 */
+    #modalOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.82);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    #modalContent {
+      background: #1e293b;
+      padding: 36px 28px 32px;
+      border-radius: 24px;
+      max-width: 420px;
+      width: 92%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.65);
+      border: 1px solid rgba(255,255,255,0.07);
+      position: relative;
+      animation: modalFadeIn 0.3s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.94) translateY(20px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    #closeModal {
+      position: absolute;
+      top: 18px;
+      right: 24px;
+      font-size: 32px;
+      cursor: pointer;
+      color: #64748b;
+      transition: color 0.2s, transform 0.2s;
+    }
+
+    #closeModal:hover {
+      color: #cbd5e1;
+      transform: rotate(90deg);
+    }
+
+    h2 {
+      margin: 0 0 28px;
+      color: #93c5fd;
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 600;
+    }
+
+    #statusInModal {
+      min-height: 100px;
+      padding: 18px;
+      background: #2d3748;
+      border-radius: 14px;
+      margin: 0 0 24px;
+      font-size: 0.96rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-all;
+      border: 1px solid rgba(148,163,184,0.15);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 15px 20px;
+      margin: 12px 0;
+      font-size: 1.02rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+
+    .connect-btn    { background: #3b82f6; color: white; }
+    .connect-btn:hover    { background: #2563eb; }
+    .sign-btn       { background: #8b5cf6; color: white; }
+    .sign-btn:hover       { background: #7c3aed; }
+    .disconnect-btn { background: #ef4444; color: white; }
+    .disconnect-btn:hover { background: #dc2626; }
+
+    .install-hint {
+      text-align: center;
+      color: #fbbf24;
+      font-weight: 500;
+      margin: 24px 0 16px;
+      font-size: 0.98rem;
+    }
+
+    .install-hint a {
+      color: #93c5fd;
+      text-decoration: underline;
+    }
+
+    .success { color: #34d399; }
+    .error   { color: #f87171; }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+</head>
+<body>
+
+<header>
+  <button class="lang-btn active" data-lang="zh">中文</button>
+  <button class="lang-btn" data-lang="en">English</button>
+  <button id="walletBtn" data-tooltip="连接钱包">
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+      <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+      <path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>
+    </svg>
+  </button>
+</header>
+
+<div id="modalOverlay">
+  <div id="modalContent">
+    <span id="closeModal">×</span>
+    <h2 data-i18n="title">钱包</h2>
+    <div id="statusInModal">加载中...</div>
+    <div id="actionArea"></div>
+  </div>
+</div>
+
+<script>
+// 多语言文本表
+const i18n = {
+  zh: {
+    title: "钱包",
+    connect: "连接钱包",
+    sign: "签名一条消息",
+    disconnect: "断开连接",
+    detected: "已检测到 MetaMask<br>准备连接钱包",
+    connected: "已连接成功<br><strong>地址：</strong> ",
+    chainId: "<br><strong>链ID：</strong> ",
+    signing: "正在请求签名...<br>请在钱包中仔细阅读并确认",
+    signSuccess: "签名成功！<br><br><strong>消息内容：</strong><br><code>",
+    signResult: "</code><br><br><strong>签名结果：</strong><br><code>",
+    signFail: "签名被拒绝或失败：",
+    disconnectMsg: "已断开连接<br>如钱包仍显示连接，可在 MetaMask → 已连接网站 中手动移除",
+    noMetaMask: "未检测到 MetaMask（小狐狸钱包）",
+    installHint: "请先安装 MetaMask 浏览器扩展<br><a href='https://metamask.io/download/' target='_blank'>立即下载 MetaMask</a>",
+    tooltipConnect: "连接钱包",
+    tooltipConnectedPrefix: ""  // 已连接时显示缩短地址，不需要前缀
+  },
+  en: {
+    title: "Wallet",
+    connect: "Connect Wallet",
+    sign: "Sign a Message",
+    disconnect: "Disconnect",
+    detected: "MetaMask detected<br>Ready to connect",
+    connected: "Connected successfully<br><strong>Address:</strong> ",
+    chainId: "<br><strong>Chain ID:</strong> ",
+    signing: "Requesting signature...<br>Please review and confirm in wallet",
+    signSuccess: "Signature successful!<br><br><strong>Message:</strong><br><code>",
+    signResult: "</code><br><br><strong>Signature:</strong><br><code>",
+    signFail: "Signature rejected or failed: ",
+    disconnectMsg: "Disconnected<br>If still showing connected, remove this site in MetaMask → Connected sites",
+    noMetaMask: "MetaMask (fox wallet) not detected",
+    installHint: "Please install MetaMask browser extension first<br><a href='https://metamask.io/download/' target='_blank'>Download MetaMask now</a>",
+    tooltipConnect: "Connect Wallet",
+    tooltipConnectedPrefix: ""  // 显示缩短地址
+  }
+};
+
+let currentLang = "zh";  // 默认中文
+
+function t(key) {
+  return i18n[currentLang][key] || key;
+}
+
+function setLanguage(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+  // 更新已打开的弹窗（如果打开状态）
+  if (modalOverlay.style.display === 'flex') {
+    renderModalContent();
+  }
+  // 更新 tooltip
+  walletBtn.setAttribute('data-tooltip', userAddress ? `${userAddress.slice(0,4)}...${userAddress.slice(-4)}` : t('tooltipConnect'));
+}
+
+// 语言按钮事件
+document.querySelectorAll('.lang-btn').forEach(btn => {
+  btn.onclick = () => setLanguage(btn.dataset.lang);
+});
+
+const walletBtn = document.getElementById('walletBtn');
+const modalOverlay = document.getElementById('modalOverlay');
+const closeModal = document.getElementById('closeModal');
+const statusInModal = document.getElementById('statusInModal');
+const actionArea = document.getElementById('actionArea');
+const modalTitle = document.querySelector('#modalContent h2');
+
+let web3 = null;
+let userAddress = null;
+
+function updateWalletBtn() {
+  if (userAddress) {
+    walletBtn.classList.add('connected');
+    const short = `${userAddress.slice(0,4)}...${userAddress.slice(-4)}`;
+    walletBtn.setAttribute('data-tooltip', short);
+  } else {
+    walletBtn.classList.remove('connected');
+    walletBtn.setAttribute('data-tooltip', t('tooltipConnect'));
+  }
+}
+
+function showModal() {
+  modalOverlay.style.display = 'flex';
+  renderModalContent();
+}
+
+function hideModal() {
+  modalOverlay.style.display = 'none';
+}
+
+function updateStatus(text, className = '') {
+  statusInModal.innerHTML = text;
+  statusInModal.className = className;
+}
+
+function renderModalContent() {
+  actionArea.innerHTML = '';
+  modalTitle.textContent = t('title');
+
+  if (!window.ethereum) {
+    updateStatus(t('noMetaMask'), 'error');
+    const hint = document.createElement('div');
+    hint.className = 'install-hint';
+    hint.innerHTML = t('installHint');
+    actionArea.appendChild(hint);
+    return;
+  }
+
+  if (userAddress) {
+    updateStatus(t('connected') + userAddress + t('chainId') + '加载中...', 'success');
+
+    web3.eth.getChainId().then(chainId => {
+      updateStatus(t('connected') + userAddress + t('chainId') + chainId, 'success');
+    }).catch(() => {
+      updateStatus(t('connected') + userAddress + t('chainId') + '(failed)', 'success');
+    });
+
+    const signBtn = document.createElement('button');
+    signBtn.className = 'btn sign-btn';
+    signBtn.textContent = t('sign');
+    signBtn.onclick = handleSign;
+    actionArea.appendChild(signBtn);
+
+    const disconnectBtn = document.createElement('button');
+    disconnectBtn.className = 'btn disconnect-btn';
+    disconnectBtn.textContent = t('disconnect');
+    disconnectBtn.onclick = handleDisconnect;
+    actionArea.appendChild(disconnectBtn);
+
+  } else {
+    updateStatus(t('detected'), 'success');
+
+    const connectBtn = document.createElement('button');
+    connectBtn.className = 'btn connect-btn';
+    connectBtn.textContent = t('connect');
+    connectBtn.onclick = handleConnect;
+    actionArea.appendChild(connectBtn);
+  }
+}
+
+async function handleConnect() {
+  try {
+    updateStatus(t('signing').replace('签名', 'connecting'), 'success');
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    userAddress = accounts[0];
+    web3 = new Web3(window.ethereum);
+    updateWalletBtn();
+    renderModalContent();
+  } catch (err) {
+    updateStatus(`${t('signFail')}${err.message || 'canceled'}`, 'error');
+  }
+}
+
+async function handleSign() {
+  if (!userAddress) return;
+
+  try {
+    updateStatus(t('signing'), 'success');
+    const message = `Test signature\nAddress: ${userAddress}\nTime: ${new Date().toLocaleString(currentLang === 'zh' ? 'zh-CN' : 'en-US')}\n\nFor demo only, no asset operation involved.`;
+    const hexMsg = web3.utils.utf8ToHex(message);
+    const signature = await window.ethereum.request({
+      method: 'personal_sign',
+      params: [hexMsg, userAddress],
+    });
+    updateStatus(
+      `${t('signSuccess')}<code style="font-size:0.9em;">${message}</code>${t('signResult')}<code style="font-size:0.9em;word-break:break-all;">${signature}</code>`,
+      'success'
+    );
+  } catch (err) {
+    updateStatus(`${t('signFail')}${err.message || 'canceled'}`, 'error');
+  }
+}
+
+async function handleDisconnect() {
+  try {
+    await window.ethereum.request({
+      method: 'wallet_revokePermissions',
+      params: [{ eth_accounts: {} }]
+    }).catch(() => {});
+  } catch {}
+
+  userAddress = null;
+  web3 = null;
+  updateWalletBtn();
+  renderModalContent();
+  updateStatus(t('disconnectMsg'), 'success');
+}
+
+// 事件绑定
+walletBtn.onclick = showModal;
+closeModal.onclick = hideModal;
+modalOverlay.onclick = (e) => { if (e.target === modalOverlay) hideModal(); };
+
+if (window.ethereum) {
+  window.ethereum.on('accountsChanged', (accounts) => {
+    userAddress = accounts.length > 0 ? accounts[0] : null;
+    updateWalletBtn();
+    if (modalOverlay.style.display === 'flex') renderModalContent();
+  });
+
+  window.ethereum.on('chainChanged', () => window.location.reload());
+
+  window.ethereum.request({ method: 'eth_accounts' })
+    .then(accounts => {
+      if (accounts.length > 0) {
+        userAddress = accounts[0];
+        web3 = new Web3(window.ethereum);
+        updateWalletBtn();
+      }
+    })
+    .catch(() => {});
+}
+
+// 初始化
+updateWalletBtn();
+</script>
+
+</body>
+</html>
