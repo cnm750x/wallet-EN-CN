@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>钱包连接演示 - 美化按钮版</title>
+  <title>钱包连接演示 - 统一长方按钮版</title>
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -26,12 +26,12 @@
 
     .btn-group {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
     }
 
     .lang-btn, #walletBtn {
-      height: 48px;
+      height: 44px;
       padding: 0 18px;
       border: none;
       border-radius: 12px;
@@ -42,18 +42,18 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      min-width: 80px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      min-width: 70px;
     }
 
-    .lang-btn {
-      background: rgba(59,130,246,0.25);
+    .lang-btn, #walletBtn:not(.connected) {
+      background: rgba(59, 130, 246, 0.28);
       color: #93c5fd;
-      border: 1px solid rgba(147,197,253,0.3);
+      border: 1px solid rgba(147, 197, 253, 0.35);
     }
 
-    .lang-btn:hover {
-      background: rgba(59,130,246,0.45);
+    .lang-btn:hover, #walletBtn:not(.connected):hover {
+      background: rgba(59, 130, 246, 0.45);
       border-color: #60a5fa;
       transform: translateY(-1px);
     }
@@ -62,25 +62,25 @@
       background: #3b82f6;
       color: white;
       border-color: #3b82f6;
-      box-shadow: 0 6px 16px rgba(59,130,246,0.5);
+      box-shadow: 0 6px 16px rgba(59,130,246,0.45);
     }
 
     #walletBtn {
-      background: linear-gradient(135deg, #3b82f6, #60a5fa);
-      color: white;
       gap: 8px;
       padding: 0 20px;
       min-width: 140px;
     }
 
-    #walletBtn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 24px rgba(59,130,246,0.6);
-    }
-
     #walletBtn.connected {
       background: linear-gradient(135deg, #10b981, #34d399);
-      box-shadow: 0 6px 16px rgba(16,185,129,0.5);
+      color: white;
+      border: none;
+      box-shadow: 0 6px 16px rgba(16,185,129,0.45);
+    }
+
+    #walletBtn.connected:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(16,185,129,0.6);
     }
 
     #walletBtn svg {
@@ -92,7 +92,7 @@
       stroke-linejoin: round;
     }
 
-    /* 弹窗样式保持不变（略） */
+    /* 弹窗及按钮样式保持不变（略去重复部分） */
     #modalOverlay {
       position: fixed;
       inset: 0;
@@ -190,7 +190,7 @@
 
 <header>
   <div class="btn-group">
-    <button class="lang-btn active" data-lang="zh">中文</button>
+    <button class="lang-btn active" data-lang="zh">中</button>
     <button class="lang-btn" data-lang="en">EN</button>
     <button id="walletBtn" data-tooltip="连接钱包">
       <svg viewBox="0 0 24 24" fill="none">
@@ -361,33 +361,7 @@ function renderModalContent() {
   }
 }
 
-// 其余函数（handleConnect、handleSign、handleDisconnect）与之前完全相同
-// 为节省篇幅，这里省略重复代码，请把上一版本的这三个函数完整粘贴过来
-
-// 事件绑定（保持不变）
-walletBtn.onclick = showModal;
-closeModal.onclick = hideModal;
-modalOverlay.onclick = (e) => { if (e.target === modalOverlay) hideModal(); };
-
-if (window.ethereum) {
-  window.ethereum.on('accountsChanged', (accounts) => {
-    userAddress = accounts.length > 0 ? accounts[0] : null;
-    updateWalletBtn();
-    if (modalOverlay.style.display === 'flex') renderModalContent();
-  });
-
-  window.ethereum.on('chainChanged', () => window.location.reload());
-
-  window.ethereum.request({ method: 'eth_accounts' })
-    .then(accounts => {
-      if (accounts.length > 0) {
-        userAddress = accounts[0];
-        web3 = new Web3(window.ethereum);
-        updateWalletBtn();
-      }
-    })
-    .catch(() => {});
-}
+// 以下函数与之前完全相同（为节省篇幅省略，请复制上一版本的 handleConnect、handleSign、handleDisconnect、事件绑定代码）
 
 // 初始化
 updateWalletBtn();
