@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>钱包连接演示 - 中英切换</title>
+  <title>钱包连接演示 - 支持中英切换</title>
   <style>
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -153,6 +153,7 @@
       text-align: center;
       color: #fbbf24;
       margin: 20px 0;
+      font-size: 0.95rem;
     }
   </style>
 
@@ -197,8 +198,11 @@ const texts = {
     address: "地址：",
     chainId: "链ID：",
     noMetaMask: "未检测到 MetaMask",
-    install: "请先安装 MetaMask 浏览器扩展",
-    download: "立即下载 MetaMask",
+    noOKX: "未检测到欧意钱包 (OKX Wallet)",
+    installMetaMask: "请先安装 MetaMask 浏览器扩展",
+    installOKX: "请先安装欧意钱包扩展",
+    downloadMetaMask: "下载 MetaMask",
+    downloadOKX: "下载欧意钱包",
     disconnectMsg: "已断开连接",
     signSuccess: "签名成功",
     message: "消息内容：",
@@ -215,8 +219,11 @@ const texts = {
     address: "Address: ",
     chainId: "Chain ID: ",
     noMetaMask: "MetaMask not detected",
-    install: "Please install MetaMask extension first",
-    download: "Download MetaMask now",
+    noOKX: "OKX Wallet not detected",
+    installMetaMask: "Please install MetaMask extension first",
+    installOKX: "Please install OKX Wallet extension first",
+    downloadMetaMask: "Download MetaMask",
+    downloadOKX: "Download OKX Wallet",
     disconnectMsg: "Disconnected",
     signSuccess: "Signature Successful",
     message: "Message:",
@@ -279,52 +286,90 @@ function renderModal() {
   modalTitle.textContent = txt.wallet;
   actionArea.innerHTML = '';
 
-  if (!window.ethereum) {
-    setStatus(`
-      <div style="color:#f87171">${txt.noMetaMask}</div>
-      <div class="install-hint">
-        ${txt.install}<br>
-        <a href="https://metamask.io/download/" target="_blank" style="color:#60a5fa">
-          ${txt.download}
-        </a>
-      </div>
-    `, 'error');
+  // 优先检查 OKX Wallet (window.okxwallet)
+  if (window.okxwallet) {
+    setStatus(`<div style="color:#34d399">已检测到欧意钱包 (OKX Wallet)</div>`, 'success');
+
+    if (userAddress) {
+      web3.eth.getChainId().then(id => {
+        setStatus(`${txt.connected}<br>${txt.address}${userAddress}<br>${txt.chainId}${id}`, 'success');
+      }).catch(() => {});
+
+      const signBtn = document.createElement('button');
+      signBtn.className = 'action-btn sign-btn';
+      signBtn.textContent = txt.sign;
+      signBtn.onclick = signMessage;
+      actionArea.appendChild(signBtn);
+
+      const discBtn = document.createElement('button');
+      discBtn.className = 'action-btn disconnect-btn';
+      discBtn.textContent = txt.disconnect;
+      discBtn.onclick = disconnectWallet;
+      actionArea.appendChild(discBtn);
+    } else {
+      const connBtn = document.createElement('button');
+      connBtn.className = 'action-btn connect-btn';
+      connBtn.textContent = txt.connect;
+      connBtn.onclick = connectWallet;
+      actionArea.appendChild(connBtn);
+    }
     return;
   }
 
-  if (userAddress) {
-    setStatus(`${txt.connected}<br>${txt.address}${userAddress}<br>`, 'success');
-    web3.eth.getChainId().then(id => {
-      setStatus(`${txt.connected}<br>${txt.address}${userAddress}<br>${txt.chainId}${id}`, 'success');
-    }).catch(() => {});
+  // 如果没有 OKX，再检查 MetaMask (window.ethereum)
+  if (window.ethereum) {
+    setStatus(`<div style="color:#34d399">已检测到 MetaMask</div>`, 'success');
 
-    const signBtn = document.createElement('button');
-    signBtn.className = 'action-btn sign-btn';
-    signBtn.textContent = txt.sign;
-    signBtn.onclick = signMessage;
-    actionArea.appendChild(signBtn);
+    if (userAddress) {
+      web3.eth.getChainId().then(id => {
+        setStatus(`${txt.connected}<br>${txt.address}${userAddress}<br>${txt.chainId}${id}`, 'success');
+      }).catch(() => {});
 
-    const discBtn = document.createElement('button');
-    discBtn.className = 'action-btn disconnect-btn';
-    discBtn.textContent = txt.disconnect;
-    discBtn.onclick = disconnectWallet;
-    actionArea.appendChild(discBtn);
-  } else {
-    setStatus('MetaMask 已检测到', 'success');
-    const connBtn = document.createElement('button');
-    connBtn.className = 'action-btn connect-btn';
-    connBtn.textContent = txt.connect;
-    connBtn.onclick = connectWallet;
-    actionArea.appendChild(connBtn);
+      const signBtn = document.createElement('button');
+      signBtn.className = 'action-btn sign-btn';
+      signBtn.textContent = txt.sign;
+      signBtn.onclick = signMessage;
+      actionArea.appendChild(signBtn);
+
+      const discBtn = document.createElement('button');
+      discBtn.className = 'action-btn disconnect-btn';
+      discBtn.textContent = txt.disconnect;
+      discBtn.onclick = disconnectWallet;
+      actionArea.appendChild(discBtn);
+    } else {
+      const connBtn = document.createElement('button');
+      connBtn.className = 'action-btn connect-btn';
+      connBtn.textContent = txt.connect;
+      connBtn.onclick = connectWallet;
+      actionArea.appendChild(connBtn);
+    }
+    return;
   }
+
+  // 两者都没有
+  setStatus(`
+    <div style="color:#f87171">${txt.noOKX}</div>
+    <div class="install-hint">
+      ${txt.installOKX}<br>
+      <a href="https://www.okx.com/web3" target="_blank" style="color:#60a5fa">
+        ${txt.downloadOKX}
+      </a>
+    </div>
+    <div style="margin-top:12px; opacity:0.7">
+      或安装 MetaMask<br>
+      <a href="https://metamask.io/download/" target="_blank" style="color:#93c5fd">
+        下载 MetaMask
+      </a>
+    </div>
+  `, 'error');
 }
 
 // ──────────────────────────────
-// 钱包操作
+// 钱包操作函数（保持不变）
 // ──────────────────────────────
 async function connectWallet() {
   try {
-    setStatus('正在连接...', 'success');
+    setStatus(texts[currentLang].signing.replace('签名', '连接'), 'success');
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     userAddress = accounts[0];
     web3 = new Web3(window.ethereum);
